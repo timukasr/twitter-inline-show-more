@@ -1,0 +1,30 @@
+{
+	"manifest_version": 3,
+	"name": "Twitter Show More",
+	"version": "1.0",
+	"permissions": [
+		"activeTab"
+	],
+	"content_scripts": [
+		{
+			"matches": [
+				"https://twitter.com/*"
+			],
+			"js": [
+				"contentScript.js",
+				"inject.js"
+			],
+			"run_at": "document_start"
+		}
+	],
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"injected.js"
+			],
+			"matches": [
+				"https://twitter.com/*"
+			]
+		}
+	]
+}
