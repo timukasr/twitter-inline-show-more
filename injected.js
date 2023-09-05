@@ -18,27 +18,41 @@ window.XMLHttpRequest.prototype.open = function (method, url) {
 	return oldXHROpen.apply(this, arguments);
 };
 
+
+/**
+ * @param {UserTweetData} jsonData
+ */
 function extractTweets(jsonData) {
 	const instructions = jsonData.data.user.result.timeline_v2.timeline.instructions;
 
 	for (const instruction of instructions) {
-		if (instruction.type !== 'TimelineAddEntries') {
-			continue;
+		if (instruction.entries) {
+			for (const entry of instruction.entries) {
+				const content = entry.content;
+				if (content.items) {
+					for (const entry of content.items) {
+						handleResult(entry.item)
+					}
+				}
+				handleResult(entry.content)
+			}
 		}
+	}
+}
 
-		for (const entry of instruction.entries) {
-			if (!entry.entryId.startsWith('tweet')) {
-				continue;
-			}
-			try {
-				const tweet = entry.content.itemContent.tweet_results.result.note_tweet.note_tweet_results.result;
-				tweets[entry.entryId.slice(6)] = tweet;
-			} catch (e) {
-				console.log('failed to parse2')
-				console.log(e)
-				console.log(entry)
-			}
-		}
+/**
+ *
+ * @param {ItemItem|PurpleContent} entry
+ */
+function handleResult(entry) {
+	const result = entry.itemContent?.tweet_results?.result;
+	if (!result) {
+		return;
+	}
+	const tweet = result.note_tweet?.note_tweet_results.result;
+
+	if (tweet) {
+		tweets[result.rest_id] = tweet;
 	}
 }
 
@@ -65,8 +79,10 @@ function findAndHandleElements() {
 				element.previousSibling.innerHTML = html;
 				element.remove()
 				console.log(html);
-				evt.preventDefault();
 
+				evt.preventDefault();
+			} else {
+				console.log(id)
 			}
 		})
 	}
@@ -76,13 +92,16 @@ function renderTweet(data, linkHtml) {
 	let html = data.text;
 
 	// Add bold formatting based on the richtext_tags
-	for (let tag of data.richtext.richtext_tags) {
+	for (let i = data.richtext.richtext_tags.length - 1; i >= 0; i--) {
+		let tag = data.richtext.richtext_tags[i];
+
 		if (tag.richtext_types.includes("Bold")) {
 			const before = html.slice(0, tag.from_index);
 			const boldText = html.slice(tag.from_index, tag.to_index);
 			const after = html.slice(tag.to_index);
 			html = `${before}<strong>${boldText}</strong>${after}`;
 		}
+
 		// Add other formatting here as needed
 	}
 
