@@ -1,6 +1,6 @@
 {
 	"manifest_version": 3,
-	"name": "Twitter Show More",
+	"name": "X / Twitter Inline Show More",
 	"version": "1.0",
 	"permissions": [
 		"activeTab"
