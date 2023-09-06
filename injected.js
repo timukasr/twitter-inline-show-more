@@ -20,10 +20,10 @@ window.XMLHttpRequest.prototype.open = function (method, url) {
 
 
 /**
- * @param {UserTweetData} jsonData
+ * @param {TopLevel} jsonData
  */
 function extractTweets(jsonData) {
-	const instructions = jsonData.data.user.result.timeline_v2.timeline.instructions;
+	const instructions = jsonData.data.user?.result.timeline_v2.timeline.instructions || jsonData.data.home?.home_timeline_urt.instructions;
 
 	for (const instruction of instructions) {
 		if (instruction.entries) {
@@ -42,18 +42,27 @@ function extractTweets(jsonData) {
 
 /**
  *
- * @param {ItemItem|PurpleContent} entry
+ * @param {StickyItem|FluffyContent} entry
  */
 function handleResult(entry) {
 	const result = entry.itemContent?.tweet_results?.result;
 	if (!result) {
 		return;
 	}
+
 	const tweet = result.note_tweet?.note_tweet_results.result;
 
 	if (tweet) {
 		tweets[result.rest_id] = tweet;
 	}
+
+	const quotedTweetResult = result.legacy?.retweeted_status_result?.result.quoted_status_result?.result;
+	const quotedTweet = quotedTweetResult?.note_tweet?.note_tweet_results.result;
+
+	if (quotedTweet) {
+		tweets[quotedTweetResult.rest_id] = quotedTweet;
+	}
+
 }
 
 function findAndHandleElements() {
@@ -66,7 +75,7 @@ function findAndHandleElements() {
 		element.setAttribute('data-processed', 'true');
 
 		element.addEventListener('click', evt => {
-			const url = element.closest('article').querySelector('a[href*=status]').href;
+			const url = element.href || element.closest('article').querySelector('a[href*=status]').href;
 			const parts = url.split('/');
 			const id = parts[parts.length - 1];
 			const tweet = tweets[id];
@@ -76,10 +85,9 @@ function findAndHandleElements() {
 				const classes = element.className;
 				const style = element.style.cssText;
 				const html = renderTweet(tweet, `class="${classes}" style="${style}"`);
-				element.previousSibling.innerHTML = html;
+				element.parentElement.innerHTML = html;
 				element.remove()
 				console.log(html);
-
 				evt.preventDefault();
 			} else {
 				console.log(id)
@@ -91,18 +99,34 @@ function findAndHandleElements() {
 function renderTweet(data, linkHtml) {
 	let html = data.text;
 
-	// Add bold formatting based on the richtext_tags
-	for (let i = data.richtext.richtext_tags.length - 1; i >= 0; i--) {
-		let tag = data.richtext.richtext_tags[i];
+	if (data.richtext) {
+		// Add bold formatting based on the richtext_tags
+		for (let i = data.richtext.richtext_tags.length - 1; i >= 0; i--) {
+			let tag = data.richtext.richtext_tags[i];
 
-		if (tag.richtext_types.includes("Bold")) {
-			const before = html.slice(0, tag.from_index);
-			const boldText = html.slice(tag.from_index, tag.to_index);
-			const after = html.slice(tag.to_index);
-			html = `${before}<strong>${boldText}</strong>${after}`;
+			if (tag.richtext_types.includes("Bold")) {
+				const before = html.slice(0, tag.from_index);
+				let innerText = html.slice(tag.from_index, tag.to_index);
+				const after = html.slice(tag.to_index);
+
+				if (tag.richtext_types.includes("Bold")) {
+					innerText = `<strong>${innerText}</strong>`;
+				}
+
+				if (tag.richtext_types.includes("Italic")) {
+					innerText = `<em>${innerText}</em>`;
+				}
+
+				html = `${before}${innerText}${after}`;
+			}
 		}
+	}
 
-		// Add other formatting here as needed
+	if (data.entity_set.user_mentions) {
+		for (const mention of data.entity_set.user_mentions) {
+			console.log(mention)
+			html = html.replaceAll(`@${mention.screen_name}`, `<a href="https://twitter.com/${mention.screen_name}" target="_blank" ${linkHtml}>@${mention.screen_name}</a>`);
+		}
 	}
 
 	// Replace URLs with actual hyperlinks

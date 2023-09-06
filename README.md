@@ -5,14 +5,17 @@ tweet, but this is slow and disrupts browsing. This extension renders whole twee
 
 ## TODO
 
-- [ ] Add support for italic styles
-- [ ] Add support for links
+- [ ] https://twitter.com/mjackson/status/1695913381142970863
 - [ ] Add support for media
+- [ ] Add support for hashtags
+- [ ] Check if we can use Twitter own rendering
 - [ ] Test different Display color and Dark themes
-- [ ] Add support in home view
-- [ ] Add support in sub tweets/threads
 - [ ] Testing
 - [ ] Deploy to Chrome Web Store
+- [x] Add support in home view
+- [x] Add support in sub tweets/thread
+- [x] Add support for links - can be improved
+- [x] Add support for italic styles
 - [x] Add support for bold styles
 - [x] Add support in user view
 
